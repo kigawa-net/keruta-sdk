@@ -1,6 +1,7 @@
 
 plugins {
     id("io.github.gradle-nexus.publish-plugin")
+    id("com.vanniktech.maven.publish")
 }
 
 nexusPublishing {
