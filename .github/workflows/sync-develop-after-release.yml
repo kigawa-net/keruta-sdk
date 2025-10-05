@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  issues: write
 
 jobs:
   create-sync-pr:
@@ -16,6 +17,8 @@ jobs:
       github.event.pull_request.base.ref == 'main' &&
       startsWith(github.event.pull_request.head.ref, 'release/')
     runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: --dns-result-order=ipv4first
 
     steps:
       - name: Checkout
@@ -98,12 +101,34 @@ jobs:
               });
               core.setOutput('number', pr.data.number.toString());
             } catch (e) {
+              // Handle organization policy or conditions preventing PR creation gracefully
+              if (e.status === 403) {
+                core.notice('Policy prevents GitHub Actions from creating pull requests. Creating an issue instead.');
+                try {
+                  const versionOut = core.getInput('version') || '';
+                  const titleIssue = versionOut
+                    ? `Manual sync needed: main -> develop after release v${versionOut}`
+                    : 'Manual sync needed: main -> develop after release';
+                  const bodyIssue = [
+                    'This repository is configured to prevent GitHub Actions from creating pull requests.',
+                    'Please create a PR to merge main into develop to sync after release.',
+                    versionOut ? `\nRelease version: v${versionOut}` : '',
+                    `\nSource PR: #${context.payload.pull_request.number}`,
+                  ].join('\n');
+                  // Try to create an issue to notify maintainers; ignore error if issues are disabled
+                  await github.rest.issues.create({ owner, repo, title: titleIssue, body: bodyIssue, labels: ['automation', 'sync'] }).catch(() => {});
+                } catch (ie) {
+                  core.warning(`Failed to create fallback issue: ${ie.message || ie}`);
+                }
+                return;
+              }
               // If there are no changes between branches, GitHub returns 422 with specific message.
               if (e.status === 422) {
                 core.notice('No changes to create a PR (branches are already in sync).');
                 return;
               }
-              throw e;
+              core.warning(`Unexpected error during PR creation: ${e.message || e}`);
+              return;
             }
 
       - name: Add summary

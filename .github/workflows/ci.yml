@@ -11,6 +11,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: --dns-result-order=ipv4first
 
     steps:
       - name: Checkout
@@ -24,6 +26,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+          cache: 'gradle'
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
