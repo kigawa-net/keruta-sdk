@@ -47,25 +47,15 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Final version: $VERSION"
 
-      - name: Debug environment variables
-        run: |
-          echo "MAVEN_USERNAME is set: ${{ secrets.MAVEN_USERNAME != '' }}"
-          echo "MAVEN_PASSWORD is set: ${{ secrets.MAVEN_PASSWORD != '' }}"
-          echo "Checking environment variables..."
-          env | grep -E "ORG_GRADLE_PROJECT_|GITHUB_|MAVEN|JAVA|GRADLE" | sort
-
-      - name: Make gradlew executable
-        run: chmod +x gradlew
-
       - name: Publish package
         uses: gradle/gradle-build-action@v2
         with:
           arguments: |
-            -PsonatypeUsername=${{ secrets.MAVEN_USERNAME }}
-            -PsonatypePassword=${{ secrets.MAVEN_PASSWORD }}
-            allTests publishToSonatype closeAndReleaseSonatypeStagingRepository
+            -PmavenCentralUsername=${{ secrets.MAVEN_USERNAME }}
+            -PmavenCentralPassword=${{ secrets.MAVEN_PASSWORD }}
+            -PsigningInMemoryKeyId=${{ secrets.MAVEN_GPG_KEY_ID }}
+            -PsigningInMemoryPassword=${{ secrets.MAVEN_GPG_PASSPHRASE }}
+            allTests publishAndReleaseToMavenCentral
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
-          # Ensure Gradle picks up the source branch for versioning
-          GITHUB_HEAD_REF: ${{ github.event.pull_request.head.ref }}
