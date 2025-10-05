@@ -15,7 +15,7 @@ on:
 
 permissions:
   contents: write
-  pull-requests: read
+  pull-requests: write
 
 jobs:
   create-release-branch:
@@ -77,6 +77,7 @@ jobs:
 
           IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VERSION"
 
+
           case "$BUMP" in
             major)
               MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
@@ -116,7 +117,71 @@ jobs:
 
           echo "branch_name=$RELEASE_BRANCH" >> $GITHUB_OUTPUT
 
+      - name: Create Pull Request to main
+        id: create_pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = `${{ steps.create_branch.outputs.branch_name }}`;
+            const version = `${{ steps.version.outputs.version }}`;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const title = `Release v${version}`;
+            const body = [
+              `This PR merges the release branch into main.`,
+              `- Version: v${version}`,
+              `- Source: ${branch}`,
+              `- Created by: GitHub Actions`
+            ].join('\n');
+
+            // Check if PR already exists
+            const { data: existing } = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
+              head: `${owner}:${branch}`,
+              base: 'main',
+              per_page: 1
+            });
+            if (existing && existing.length > 0) {
+              core.info(`PR already exists: ${existing[0].html_url}`);
+              core.setOutput('pr_number', existing[0].number.toString());
+              core.setOutput('pr_url', existing[0].html_url);
+            } else {
+              try {
+                const { data: pr } = await github.rest.pulls.create({
+                  owner,
+                  repo,
+                  head: branch,
+                  base: 'main',
+                  title,
+                  body
+                });
+                core.info(`Created PR: ${pr.html_url}`);
+                core.setOutput('pr_number', pr.number.toString());
+                core.setOutput('pr_url', pr.html_url);
+              } catch (e) {
+                // Handle org policy that prevents Actions from creating PRs
+                if (e.status === 403) {
+                  core.notice('Policy prevents GitHub Actions from creating pull requests. Skipping PR creation.');
+                  core.setOutput('pr_number', '');
+                  core.setOutput('pr_url', '');
+                } else if (e.status === 422) {
+                  core.notice('No changes to create a PR (branches are already in sync).');
+                  core.setOutput('pr_number', '');
+                  core.setOutput('pr_url', '');
+                } else {
+                  throw e;
+                }
+              }
+            }
+
       - name: Summary
         run: |
-          echo "Created branch: ${{ steps.create_branch.outputs.branch_name }} from origin/develop (version=${{ steps.version.outputs.version }}, bump=${{ steps.validate.outputs.bump }})" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "Created branch: ${{ steps.create_branch.outputs.branch_name }} from origin/develop (version=${{ steps.version.outputs.version }}, bump=${{ steps.validate.outputs.bump }})";
+            if [ -n "${{ steps.create_pr.outputs.pr_url }}" ]; then
+              echo "PR to main: ${{ steps.create_pr.outputs.pr_url }} (#{${{ steps.create_pr.outputs.pr_number }}})";
+            fi
+          } >> $GITHUB_STEP_SUMMARY
 

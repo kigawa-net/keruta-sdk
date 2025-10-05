@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ "**" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: wrapper
+
+      - name: Make gradlew executable (Linux)
+        run: chmod +x ./gradlew
+
+      - name: Build
+        run: ./gradlew build --stacktrace --warning-mode all
+
+      - name: Publish build scan (if available)
+        if: always()
+        run: |
+          if ./gradlew -q tasks --all | grep -q "buildScanPublish"; then
+            ./gradlew buildScanPublish || true
+          fi
