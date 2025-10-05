@@ -13,3 +13,8 @@ nexusPublishing {
     }
 }
 
+mavenPublishing {
+    publishToMavenCentral()
+
+    signAllPublications()
+}

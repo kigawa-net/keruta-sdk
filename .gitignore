@@ -5,3 +5,4 @@
 /*/*/build/
 /*/build/
 /build/
+/hs_err_pid*.log
