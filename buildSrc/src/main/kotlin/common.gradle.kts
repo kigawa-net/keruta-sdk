@@ -1,5 +1,3 @@
-import gradle.kotlin.dsl.accessors._9986a901792e3848279089cf03da79c0.publishing
-import gradle.kotlin.dsl.accessors._9986a901792e3848279089cf03da79c0.signing
 
 plugins {
     kotlin("jvm")
