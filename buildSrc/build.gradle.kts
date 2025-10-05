@@ -18,4 +18,5 @@ dependencies {
     implementation(kotlinPluginId("jvm"))
     implementation(kotlinPluginId("plugin.serialization"))
     implementation(pluginId("io.github.gradle-nexus.publish-plugin","2.0.0"))
+    implementation(pluginId("com.vanniktech.maven.publish","0.29.0"))
 }
