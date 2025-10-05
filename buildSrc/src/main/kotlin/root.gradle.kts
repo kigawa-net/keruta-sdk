@@ -17,6 +17,14 @@ allprojects {
     version = projectVersion
 }
 
+// Aggregate test task for CI compatibility
+// Allows running `./gradlew allTests` to execute tests in all subprojects
+tasks.register("allTests") {
+    group = "verification"
+    description = "Runs all tests in all subprojects."
+    dependsOn(subprojects.map { it.tasks.named("test") })
+}
+
 object Conf {
     const val GROUP = "net.kigawa"
 
