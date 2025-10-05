@@ -1,0 +1,112 @@
+name: Sync main into develop after release
+
+on:
+  pull_request:
+    types: [ closed ]
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  create-sync-pr:
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main' &&
+      startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version from source branch
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          echo "Source branch: $BRANCH_NAME"
+
+          VERSION=""
+          if [[ "$BRANCH_NAME" =~ ^release/v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+            echo "Release branch detected, version: $VERSION"
+          else
+            echo "Could not parse version from branch: $BRANCH_NAME"
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure 'develop' exists on remote
+        shell: bash
+        run: |
+          if ! git ls-remote --exit-code --heads origin develop; then
+            echo "Remote branch 'develop' does not exist. Please create it first." >&2
+            exit 1
+          fi
+
+      - name: Check if a PR from main to develop already exists
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const existing = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
+              head: `${owner}:main`,
+              base: 'develop',
+              per_page: 10,
+            });
+            const found = existing.data.length > 0;
+            core.setOutput('exists', found ? 'true' : 'false');
+
+      - name: Create PR main -> develop
+        if: steps.check.outputs.exists != 'true'
+        id: create_pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const version = core.getInput('version') || '';
+            // Compose title and body
+            const title = version
+              ? `Sync main into develop after release v${version}`
+              : 'Sync main into develop after release';
+            const body = [
+              'This automated PR syncs changes from main back into develop after a release merge.',
+              version ? `\nRelease version: v${version}` : '',
+              `\nSource PR: #${context.payload.pull_request.number}`,
+            ].join('');
+
+            try {
+              const pr = await github.rest.pulls.create({
+                owner,
+                repo,
+                title,
+                head: 'main',
+                base: 'develop',
+                body,
+                draft: true,
+                maintainer_can_modify: true,
+              });
+              core.setOutput('number', pr.data.number.toString());
+            } catch (e) {
+              // If there are no changes between branches, GitHub returns 422 with specific message.
+              if (e.status === 422) {
+                core.notice('No changes to create a PR (branches are already in sync).');
+                return;
+              }
+              throw e;
+            }
+
+      - name: Add summary
+        if: steps.create_pr.outputs.number != ''
+        run: |
+          echo "Created PR #${{ steps.create_pr.outputs.number }} to sync main -> develop" >> $GITHUB_STEP_SUMMARY
