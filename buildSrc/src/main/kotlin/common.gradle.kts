@@ -4,6 +4,7 @@ plugins {
     kotlin("plugin.serialization")
     `maven-publish`
     signing
+
 }
 
 repositories {
