@@ -74,10 +74,12 @@ jobs:
         if: steps.check.outputs.exists != 'true'
         id: create_pr
         uses: actions/github-script@v7
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         with:
           script: |
             const { owner, repo } = context.repo;
-            const version = core.getInput('version') || '';
+            const version = process.env.VERSION || '';
             // Compose title and body
             const title = version
               ? `Sync main into develop after release v${version}`
@@ -105,7 +107,7 @@ jobs:
               if (e.status === 403) {
                 core.notice('Policy prevents GitHub Actions from creating pull requests. Creating an issue instead.');
                 try {
-                  const versionOut = core.getInput('version') || '';
+                  const versionOut = process.env.VERSION || '';
                   const titleIssue = versionOut
                     ? `Manual sync needed: main -> develop after release v${versionOut}`
                     : 'Manual sync needed: main -> develop after release';

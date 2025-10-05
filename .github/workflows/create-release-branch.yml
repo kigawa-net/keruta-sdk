@@ -16,6 +16,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   create-release-branch:
@@ -134,6 +135,12 @@ jobs:
               `- Created by: GitHub Actions`
             ].join('\n');
 
+            // initialize outputs
+            core.setOutput('pr_number', '');
+            core.setOutput('pr_url', '');
+            core.setOutput('issue_number', '');
+            core.setOutput('issue_url', '');
+
             // Check if PR already exists
             const { data: existing } = await github.rest.pulls.list({
               owner,
@@ -163,13 +170,25 @@ jobs:
               } catch (e) {
                 // Handle org policy that prevents Actions from creating PRs
                 if (e.status === 403) {
-                  core.notice('Policy prevents GitHub Actions from creating pull requests. Skipping PR creation.');
-                  core.setOutput('pr_number', '');
-                  core.setOutput('pr_url', '');
+                  core.notice('Policy prevents GitHub Actions from creating pull requests. Creating an issue instead.');
+                  const issueTitle = `Manual action required: Create PR for release v${version}`;
+                  const issueBody = [
+                    `This repository's policy prevents GitHub Actions from creating pull requests.`,
+                    `A release branch has been created: \\`${branch}\\`.`,
+                    `Please manually create a PR from \\`${branch}\\` to \\`main\\`.`,
+                    '',
+                    `Context:`,
+                    `- Version: v${version}`,
+                    `- Attempted PR title: ${title}`,
+                    `- Triggered by: ${context.actor}`,
+                    `- Workflow run: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`
+                  ].join('\n');
+                  const { data: issue } = await github.rest.issues.create({ owner, repo, title: issueTitle, body: issueBody });
+                  core.info(`Created Issue: ${issue.html_url}`);
+                  core.setOutput('issue_number', issue.number.toString());
+                  core.setOutput('issue_url', issue.html_url);
                 } else if (e.status === 422) {
                   core.notice('No changes to create a PR (branches are already in sync).');
-                  core.setOutput('pr_number', '');
-                  core.setOutput('pr_url', '');
                 } else {
                   throw e;
                 }
@@ -182,6 +201,8 @@ jobs:
             echo "Created branch: ${{ steps.create_branch.outputs.branch_name }} from origin/develop (version=${{ steps.version.outputs.version }}, bump=${{ steps.validate.outputs.bump }})";
             if [ -n "${{ steps.create_pr.outputs.pr_url }}" ]; then
               echo "PR to main: ${{ steps.create_pr.outputs.pr_url }} (#{${{ steps.create_pr.outputs.pr_number }}})";
+            elif [ -n "${{ steps.create_pr.outputs.issue_url }}" ]; then
+              echo "Notice: Policy prevents GitHub Actions from creating pull requests. Creating an issue instead: ${{ steps.create_pr.outputs.issue_url }} (#{${{ steps.create_pr.outputs.issue_number }}})";
             fi
           } >> $GITHUB_STEP_SUMMARY
 
