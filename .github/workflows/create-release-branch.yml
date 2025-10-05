@@ -119,3 +119,4 @@ jobs:
       - name: Summary
         run: |
           echo "Created branch: ${{ steps.create_branch.outputs.branch_name }} from origin/develop (version=${{ steps.version.outputs.version }}, bump=${{ steps.validate.outputs.bump }})" >> $GITHUB_STEP_SUMMARY
+
