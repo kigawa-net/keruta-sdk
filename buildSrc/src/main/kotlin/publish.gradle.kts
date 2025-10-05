@@ -5,6 +5,7 @@ import com.vanniktech.maven.publish.SonatypeHost
 plugins {
     id("io.github.gradle-nexus.publish-plugin")
     id("com.vanniktech.maven.publish")
+    id("org.jetbrains.dokka")
 }
 
 nexusPublishing {
