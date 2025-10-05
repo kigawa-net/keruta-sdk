@@ -147,17 +147,32 @@ jobs:
               core.setOutput('pr_number', existing[0].number.toString());
               core.setOutput('pr_url', existing[0].html_url);
             } else {
-              const { data: pr } = await github.rest.pulls.create({
-                owner,
-                repo,
-                head: branch,
-                base: 'main',
-                title,
-                body
-              });
-              core.info(`Created PR: ${pr.html_url}`);
-              core.setOutput('pr_number', pr.number.toString());
-              core.setOutput('pr_url', pr.html_url);
+              try {
+                const { data: pr } = await github.rest.pulls.create({
+                  owner,
+                  repo,
+                  head: branch,
+                  base: 'main',
+                  title,
+                  body
+                });
+                core.info(`Created PR: ${pr.html_url}`);
+                core.setOutput('pr_number', pr.number.toString());
+                core.setOutput('pr_url', pr.html_url);
+              } catch (e) {
+                // Handle org policy that prevents Actions from creating PRs
+                if (e.status === 403) {
+                  core.notice('Policy prevents GitHub Actions from creating pull requests. Skipping PR creation.');
+                  core.setOutput('pr_number', '');
+                  core.setOutput('pr_url', '');
+                } else if (e.status === 422) {
+                  core.notice('No changes to create a PR (branches are already in sync).');
+                  core.setOutput('pr_number', '');
+                  core.setOutput('pr_url', '');
+                } else {
+                  throw e;
+                }
+              }
             }
 
       - name: Summary

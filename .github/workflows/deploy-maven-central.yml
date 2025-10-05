@@ -54,6 +54,9 @@ jobs:
           echo "Checking environment variables..."
           env | grep -E "ORG_GRADLE_PROJECT_|GITHUB_|MAVEN|JAVA|GRADLE" | sort
 
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
       - name: Publish package
         uses: gradle/gradle-build-action@v2
         with:
