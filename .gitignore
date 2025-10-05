@@ -2,3 +2,6 @@
 /.gradle/
 /*/.gradle/
 /buildSrc/.kotlin/
+/*/*/build/
+/*/build/
+/build/
