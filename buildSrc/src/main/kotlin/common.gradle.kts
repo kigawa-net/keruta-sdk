@@ -2,8 +2,6 @@
 plugins {
     kotlin("jvm")
     kotlin("plugin.serialization")
-    `maven-publish`
-    signing
 
 }
 
@@ -33,43 +31,4 @@ java {
 
 tasks.named<Test>("test") {
     useJUnitPlatform()
-}
-val repo = "https://github.com/kigawa-net/keruta-sdk"
-publishing {
-    // Configure all publications
-    publications.withType<MavenPublication> {
-        pom {
-            name = "keruta-sdk"
-            description = "keruta-sdk"
-            url = repo
-            properties = mapOf(
-            )
-            licenses {
-                license {
-                    name.set("MIT License")
-                    url.set("http://www.opensource.org/licenses/mit-license.php")
-                }
-            }
-            developers {
-                developer {
-                    id.set("net.kigawa")
-                    name.set("kigawa")
-                    email.set("contact@kigawa.net")
-                }
-            }
-            scm {
-                connection.set("scm:git:$repo.git")
-                developerConnection.set("scm:git:$repo.git")
-                url.set(repo)
-            }
-        }
-    }
-}
-
-signing {
-    if (project.hasProperty("mavenCentralUsername") ||
-        System.getenv("ORG_GRADLE_PROJECT_mavenCentralUsername") != null
-    ) {
-        useGpgCmd()
-    }
 }
