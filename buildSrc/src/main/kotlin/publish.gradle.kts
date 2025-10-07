@@ -1,8 +1,6 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.SonatypeHost
-import gradle.kotlin.dsl.accessors._1cf78656f75d64f34fb1bc5d0a1ad58a.publishing
-import gradle.kotlin.dsl.accessors._1cf78656f75d64f34fb1bc5d0a1ad58a.signing
 
 plugins {
     id("com.vanniktech.maven.publish")
