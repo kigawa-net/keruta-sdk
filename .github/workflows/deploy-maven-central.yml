@@ -62,6 +62,6 @@ jobs:
             -PsigningInMemoryKeyId=${{ secrets.MAVEN_GPG_KEY_ID }}
             -PsigningInMemoryPassword=${{ secrets.MAVEN_GPG_PASSPHRASE }}
             allTests publishAndReleaseToMavenCentral
-        env:
-          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+#        env:
+#          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+#          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
