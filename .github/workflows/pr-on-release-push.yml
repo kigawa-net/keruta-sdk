@@ -103,6 +103,8 @@ jobs:
                   core.info(`Created Issue: ${issue.html_url}`);
                   core.setOutput('issue_number', issue.number.toString());
                   core.setOutput('issue_url', issue.html_url);
+                  // Mark the job as failed since creating a PR was blocked by policy
+                  core.setFailed('PR creation failed due to repository policy; created an issue instead.');
                 } else if (e.status === 422) {
                   core.notice('No changes to create a PR (branches are already in sync).');
                 } else {
