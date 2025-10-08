@@ -84,6 +84,7 @@ jobs:
                 core.setOutput('pr_url', pr.html_url);
               } catch (e) {
                 if (e.status === 403) {
+            console.log(e);
                   core.notice('Policy prevents GitHub Actions from creating pull requests. Creating an issue instead.');
                   const issueTitle = version && version !== branch
                     ? `Manual action required: Create PR for ${version}`
